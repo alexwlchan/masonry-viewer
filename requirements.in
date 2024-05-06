@@ -1,1 +1,5 @@
 flask
+Pillow
+sqlite_utils
+tqdm
+wcag_contrast_ratio

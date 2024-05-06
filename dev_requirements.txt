@@ -11,7 +11,13 @@ blinker==1.8.1
 click==8.1.7
     # via
     #   -r requirements.txt
+    #   click-default-group
     #   flask
+    #   sqlite-utils
+click-default-group==1.2.4
+    # via
+    #   -r requirements.txt
+    #   sqlite-utils
 flask==3.0.3
     # via -r requirements.txt
 itsdangerous==2.2.0
@@ -27,6 +33,34 @@ markupsafe==2.1.5
     #   -r requirements.txt
     #   jinja2
     #   werkzeug
+pillow==10.3.0
+    # via -r requirements.txt
+pluggy==1.5.0
+    # via
+    #   -r requirements.txt
+    #   sqlite-utils
+python-dateutil==2.9.0.post0
+    # via
+    #   -r requirements.txt
+    #   sqlite-utils
+six==1.16.0
+    # via
+    #   -r requirements.txt
+    #   python-dateutil
+sqlite-fts4==1.0.3
+    # via
+    #   -r requirements.txt
+    #   sqlite-utils
+sqlite-utils==3.36
+    # via -r requirements.txt
+tabulate==0.9.0
+    # via
+    #   -r requirements.txt
+    #   sqlite-utils
+tqdm==4.66.4
+    # via -r requirements.txt
+wcag-contrast-ratio==0.9
+    # via -r requirements.txt
 werkzeug==3.0.3
     # via
     #   -r requirements.txt
