@@ -1,6 +1,5 @@
 import os
 import random
-import time
 
 from flask import Flask, current_app, render_template, request, send_file
 
@@ -14,23 +13,17 @@ def create_app(root: str) -> Flask:
     app.add_url_rule("/", view_func=index)
     app.add_url_rule("/image", view_func=send_image)
 
+    get_image_info(root, show_progress=True)
+
     return app
 
 
 def index() -> str:
     root = current_app.config["ROOT"]
 
-    max_images = request.args.get("max_images")
-    if max_images is not None:
-        max_images = int(max_images)
+    image_info = sorted(get_image_info(root), key=lambda info: random.random())
 
-    t0 = time.time()
-    image_info = sorted(
-        get_image_info(root, max_images=max_images), key=lambda info: random.random()
-    )
-    t1 = time.time()
-
-    return render_template("index.html", image_info=image_info, root=root, t=t1 - t0)
+    return render_template("index.html", image_info=image_info, root=root)
 
 
 def send_image():

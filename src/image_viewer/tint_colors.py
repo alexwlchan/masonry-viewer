@@ -1,20 +1,45 @@
-# from docstore
-# https://github.com/alexwlchan/docstore/blob/main/src/docstore/tint_colors.py
+"""
+See https://alexwlchan.net/2019/finding-tint-colours-with-k-means/
+https://github.com/alexwlchan/docstore/blob/main/src/docstore/tint_colors.py
+"""
 
 import colorsys
-import subprocess
-import tempfile
+import typing
 
 from PIL import Image
+from sklearn.cluster import KMeans
 import wcag_contrast_ratio as contrast
 
 
-def choose_tint_color_from_dominant_colors(dominant_colors, background_color):
-    """
-    Given a set of dominant colors (say, from a k-means algorithm) and the
-    background against which they'll be displayed, choose a tint color.
+Color: typing.TypeAlias = tuple[float, float, float]
 
-    Both ``dominant_colors`` and ``background_color`` should be tuples in [0,1].
+
+def get_dominant_colours(im: Image, *, count: int) -> list[Color]:
+    """
+    Return a list of the dominant RGB colours in the image ``im``.
+
+    :param im: An image as read by Pillow.
+    :param count: Number of dominant colors to find.
+
+    """
+    # Resizing means less pixels to handle, so the *k*-means clustering converges
+    # faster.  Small details are lost, but the main details will be preserved.
+    im = im.resize((100, 100))
+
+    # Ensure the image is RGB, and use RGB values in [0, 1] for consistency
+    # with operations elsewhere.
+    im = im.convert("RGB")
+    colors = [(r / 255, g / 255, b / 255) for (r, g, b) in im.getdata()]
+
+    return [tuple(c) for c in KMeans(n_clusters=count).fit(colors).cluster_centers_]
+
+
+def choose_best_tint_color(
+    dominant_colors: list[Color], background_color: Color
+) -> Color:
+    """
+    Given a list of dominant RGB colors and a background color, choose
+    the color which will look best against this background.
     """
     # The minimum contrast ratio for text and background to meet WCAG AA
     # is 4.5:1, so discard any dominant colours with a lower contrast.
@@ -31,48 +56,37 @@ def choose_tint_color_from_dominant_colors(dominant_colors, background_color):
     # has sufficient contrast, but that's omitted here because it adds
     # a lot of complexity for a relatively unusual case.
     if not sufficient_contrast_colors:
-        return choose_tint_color_from_dominant_colors(
+        return choose_best_tint_color(
             dominant_colors=dominant_colors + [(0, 0, 0), (1, 1, 1)],
             background_color=background_color,
         )
 
-    # Of the colors with sufficient contrast, pick the one with the
-    # highest saturation.  This is meant to optimise for colors that are
-    # more colourful/interesting than simple greys and browns.
+    # Of the colours with sufficient contrast, pick the one with the
+    # closest brightness (in the HSV colour space) to the background
+    # colour.  This means we don't get very dark or very light colours,
+    # but more bright, vibrant colours.
+    hsv_background = colorsys.rgb_to_hsv(*background_color)
     hsv_candidates = {
         tuple(rgb_col): colorsys.rgb_to_hsv(*rgb_col)
         for rgb_col in sufficient_contrast_colors
     }
 
-    return max(hsv_candidates, key=lambda rgb_col: hsv_candidates[rgb_col][2])
+    candidates_by_brightness_diff = {
+        rgb_col: abs(hsv_col[2] - hsv_background[2])
+        for rgb_col, hsv_col in hsv_candidates.items()
+    }
+
+    rgb_choice, _ = min(candidates_by_brightness_diff.items(), key=lambda t: t[1])
+
+    assert rgb_choice in dominant_colors
+    return rgb_choice
 
 
-def from_hex(hs):
+def choose_tint_color(im: Image) -> Color:
     """
-    Returns an RGB tuple from a hex string, e.g. #ff0102 -> (255, 1, 2)
+    Given an image, choose a single color based on the colors in the
+    image that will look good against a black background.
     """
-    return int(hs[1:3], 16), int(hs[3:5], 16), int(hs[5:7], 16)
-
-
-def choose_tint_color_for_file(path):
-    """
-    Returns the tint colour for a file.
-    """
-    if path.suffix.lower() == '.webp':
-        im = Image.open(path)
-        _, path = tempfile.mkstemp(suffix='.jpg')
-        im.save(path)
-
-    background_color = (0, 0, 0)
-
-    cmd = ["dominant_colours", "--no-palette", "--max-colours=12", path]
-
-    dominant_colors = [
-        from_hex(line) for line in subprocess.check_output(cmd).splitlines()
-    ]
-
-    colors = [(r / 255, g / 255, b / 255) for r, g, b in dominant_colors]
-
-    return choose_tint_color_from_dominant_colors(
-        dominant_colors=colors, background_color=background_color
-    )
+    dominant_colors = get_dominant_colours(im, count=16)
+    r, g, b = choose_best_tint_color(dominant_colors, background_color=(0, 0, 0))
+    return "#%02x%02x%02x" % (int(r * 255), int(g * 255), int(b * 255))

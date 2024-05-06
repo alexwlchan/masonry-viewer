@@ -1,5 +1,3 @@
-import concurrent.futures
-import itertools
 import os
 import pathlib
 import typing
@@ -8,10 +6,10 @@ from PIL import Image, UnidentifiedImageError
 from sqlite_utils import Database
 import tqdm
 
-from .tint_colors import choose_tint_color_for_file
+from .tint_colors import choose_tint_color
 
 
-def get_file_paths_under(root=".", *, suffix=""):
+def get_file_paths_under(root="."):
     """
     Generates the absolute paths to every matching file under ``root``.
     """
@@ -25,18 +23,10 @@ def get_file_paths_under(root=".", *, suffix=""):
 
     for dirpath, _, filenames in root.walk():
         for f in filenames:
-            p = dirpath / f
-
             if f == ".DS_Store":
                 continue
 
-            if p.is_file() and f.lower().endswith(suffix):
-                yield p
-
-
-def get_tint_color(path: str, mtime: int) -> str:
-    r, g, b = choose_tint_color_for_file(path)
-    return "#%02x%02x%02x" % (int(r * 255), int(g * 255), int(b * 255))
+            yield dirpath / f
 
 
 class ImageInfo(typing.TypedDict):
@@ -47,22 +37,16 @@ class ImageInfo(typing.TypedDict):
     tint_color: str
 
 
-def get_info(
-    known_images: dict[tuple[str, int], str], path: pathlib.Path
-) -> ImageInfo | None:
-    mtime = os.path.getmtime(path)
-
-    try:
-        return known_images[(str(path), mtime)]
-    except KeyError:
-        pass
-
-    tint_color = get_tint_color(path, mtime)
-
+def get_info(path: pathlib.Path, mtime: int) -> ImageInfo | None:
+    """
+    Get information about a single image.
+    """
     try:
         im = Image.open(path)
     except UnidentifiedImageError:
         return None
+
+    tint_color = choose_tint_color(im)
 
     info = ImageInfo(
         path=path,
@@ -87,33 +71,33 @@ def get_info(
     return info
 
 
-def get_image_info(root: str, *, max_images: int | None = None) -> list[ImageInfo]:
+def get_image_info(root: str, *, show_progress: bool = False) -> list[ImageInfo]:
+    """
+    Get info about all the images under ``root``.
+    """
     db = Database("image_info.db")
 
-    import time
-    t0 = time.time()
-    known_images = {
-        (row["path"], row["mtime"]): row for row in db["images"].rows
-    }
-    t1 = time.time(); print(t1 - t0); t0 = t1
+    known_images = {}
+
+    for row in db["images"].rows:
+        row["path"] = pathlib.Path(row["path"])
+        known_images[(row["path"], row["mtime"])] = row
 
     result: list[ImageInfo] = []
 
-    if max_images is None:
-        paths = get_file_paths_under(root)
-    else:
-        paths = itertools.islice(get_file_paths_under(root), max_images)
+    paths = list(get_file_paths_under(root))
 
-    paths = list(paths)
-    missing_paths = set(paths) - set(p for p, _ in known_images.keys())
+    if show_progress:
+        paths = tqdm.tqdm(paths)
 
-    if len(missing_paths) > 25:
-        for p in tqdm.tqdm(paths):
-            result.append(get_info(known_images, p))
-    else:
-        for p in paths:
-            result.append(get_info(known_images, p))
+    for p in paths:
+        mtime = os.path.getmtime(p)
 
-    t1 = time.time(); print(t1 - t0); t0 = t1
+        try:
+            info = known_images[(p, mtime)]
+        except KeyError:
+            info = get_info(p, mtime)
+
+        result.append(info)
 
     return result
