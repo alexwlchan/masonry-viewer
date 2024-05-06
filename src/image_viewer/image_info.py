@@ -6,6 +6,7 @@ import typing
 
 from PIL import Image, UnidentifiedImageError
 from sqlite_utils import Database
+import tqdm
 
 from .tint_colors import choose_tint_color_for_file
 
@@ -44,42 +45,57 @@ class ImageInfo(typing.TypedDict):
     height: int
     mtime: int
     tint_color: str
-    tint_color_is_new: bool
 
 
 def get_info(
     known_images: dict[tuple[str, int], str], path: pathlib.Path
 ) -> ImageInfo | None:
+    mtime = os.path.getmtime(path)
+
+    try:
+        return known_images[(str(path), mtime)]
+    except KeyError:
+        pass
+
+    tint_color = get_tint_color(path, mtime)
+
     try:
         im = Image.open(path)
     except UnidentifiedImageError:
         return None
 
-    mtime = os.path.getmtime(path)
-
-    try:
-        tint_color = known_images[(str(path), mtime)]
-        tint_color_is_new = False
-    except KeyError:
-        tint_color = get_tint_color(path, mtime)
-        tint_color_is_new = True
-
-    return ImageInfo(
+    info = ImageInfo(
         path=path,
         width=im.width,
         height=im.height,
         mtime=mtime,
         tint_color=tint_color,
-        tint_color_is_new=tint_color_is_new,
     )
+
+    db = Database("image_info.db")
+    db["images"].upsert(
+        {
+            "path": str(path),
+            "mtime": mtime,
+            "width": info["width"],
+            "height": info["height"],
+            "tint_color": info["tint_color"],
+        },
+        pk="path",
+    )
+
+    return info
 
 
 def get_image_info(root: str, *, max_images: int | None = None) -> list[ImageInfo]:
     db = Database("image_info.db")
 
+    import time
+    t0 = time.time()
     known_images = {
-        (row["path"], row["mtime"]): row["tint_color"] for row in db["images"].rows
+        (row["path"], row["mtime"]): row for row in db["images"].rows
     }
+    t1 = time.time(); print(t1 - t0); t0 = t1
 
     result: list[ImageInfo] = []
 
@@ -88,27 +104,16 @@ def get_image_info(root: str, *, max_images: int | None = None) -> list[ImageInf
     else:
         paths = itertools.islice(get_file_paths_under(root), max_images)
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = {
-            executor.submit(get_info, known_images, p)
-            for p in paths
-        }
+    paths = list(paths)
+    missing_paths = set(paths) - set(p for p, _ in known_images.keys())
 
-        for fut in concurrent.futures.as_completed(futures):
-            if fut.result() is not None:
-                result.append(fut.result())
+    if len(missing_paths) > 25:
+        for p in tqdm.tqdm(paths):
+            result.append(get_info(known_images, p))
+    else:
+        for p in paths:
+            result.append(get_info(known_images, p))
 
-    db["images"].upsert_all(
-        [
-            {
-                "path": str(info["path"]),
-                "mtime": info["mtime"],
-                "tint_color": info["tint_color"],
-            }
-            for info in result
-            if info["tint_color_is_new"]
-        ],
-        pk="path",
-    )
+    t1 = time.time(); print(t1 - t0); t0 = t1
 
     return result
