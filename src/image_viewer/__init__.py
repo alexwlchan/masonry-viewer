@@ -6,7 +6,9 @@ from flask import Flask, current_app, render_template, request, send_file
 from .image_info import get_image_info
 
 
-def create_app(root: str) -> Flask:
+def create_app() -> Flask:
+    root = os.environ["ROOT"]
+
     app = Flask(__name__)
     app.config["ROOT"] = root
 

@@ -29,9 +29,15 @@ def get_dominant_colours(im: Image, *, count: int) -> list[Color]:
     # Ensure the image is RGB, and use RGB values in [0, 1] for consistency
     # with operations elsewhere.
     im = im.convert("RGB")
+
     colors = [(r / 255, g / 255, b / 255) for (r, g, b) in im.getdata()]
 
-    return [tuple(c) for c in KMeans(n_clusters=count).fit(colors).cluster_centers_]
+    # /Users/alexwlchan/textfiles/Attachments/2024/Screenshot 2024-02-01 at 08.01.10.png
+    # gets negative numbers here!
+    return [
+        tuple(max(component, 0) for component in c)
+        for c in KMeans(n_clusters=count).fit(colors).cluster_centers_
+    ]
 
 
 def choose_best_tint_color(

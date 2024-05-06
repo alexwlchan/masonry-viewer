@@ -98,6 +98,7 @@ def get_image_info(root: str, *, show_progress: bool = False) -> list[ImageInfo]
         except KeyError:
             info = get_info(p, mtime)
 
-        result.append(info)
+        if info is not None:
+            result.append(info)
 
     return result
