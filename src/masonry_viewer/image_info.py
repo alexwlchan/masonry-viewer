@@ -4,7 +4,7 @@ import subprocess
 import typing
 
 from PIL import Image, UnidentifiedImageError
-from sqlite_utils import Database
+from sqlite_utils import Database, Table
 import tqdm
 
 
@@ -74,7 +74,7 @@ def get_info(path: pathlib.Path, mtime: int) -> ImageInfo | None:
     )
 
     db = Database("image_info.db")
-    db["images"].upsert(
+    Table(db, "images").upsert(
         {
             "path": str(path),
             "mtime": mtime,
