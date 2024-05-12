@@ -1,6 +1,10 @@
 [project]
-name = "image_viewer"
+name = "masonry_viewer"
 version = "1.0"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools.packages.find]
 where = ["src"]
