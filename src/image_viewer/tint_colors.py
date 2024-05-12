@@ -34,8 +34,11 @@ def get_dominant_colours(im: Image, *, count: int) -> list[Color]:
 
     # /Users/alexwlchan/textfiles/Attachments/2024/Screenshot 2024-02-01 at 08.01.10.png
     # gets negative numbers here!
+
+    # /Users/alexwlchan/textfiles/Attachments/2023/buildkite-architecture.graffle/image4.png
+    # gets >1 here!
     return [
-        tuple(max(component, 0) for component in c)
+        tuple(min(max(component, 0), 1) for component in c)
         for c in KMeans(n_clusters=count).fit(colors).cluster_centers_
     ]
 

@@ -6,20 +6,15 @@ from flask import Flask, current_app, render_template, request, send_file
 from .image_info import get_image_info
 
 
-def create_app() -> Flask:
-    root = os.environ["ROOT"]
+root = os.environ["ROOT"]
 
-    app = Flask(__name__)
-    app.config["ROOT"] = root
+app = Flask(__name__)
+app.config["ROOT"] = root
 
-    app.add_url_rule("/", view_func=index)
-    app.add_url_rule("/image", view_func=send_image)
-
-    get_image_info(root, show_progress=True)
-
-    return app
+get_image_info(root, show_progress=True)
 
 
+@app.route("/")
 def index() -> str:
     root = current_app.config["ROOT"]
 
@@ -28,6 +23,7 @@ def index() -> str:
     return render_template("index.html", image_info=image_info, root=root)
 
 
+@app.route("/image")
 def send_image():
     path = request.args["path"]
     resp = send_file(os.path.abspath(path))
