@@ -1,12 +1,29 @@
 import os
 import pathlib
+import subprocess
 import typing
 
 from PIL import Image, UnidentifiedImageError
 from sqlite_utils import Database
 import tqdm
 
-from .tint_colors import choose_tint_color
+
+def choose_tint_color(path: pathlib.Path) -> str:
+    """
+    Given an image, choose a single color based on the colors in the
+    image that will look good against a black background.
+    """
+    result = subprocess.check_output(
+        [
+            "dominant_colours",
+            str(path),
+            "--max-colours=8",
+            "--best-against-bg=#222",
+            "--no-palette",
+        ]
+    )
+
+    return result.strip().decode("utf8")
 
 
 def get_file_paths_under(root="."):
@@ -46,7 +63,7 @@ def get_info(path: pathlib.Path, mtime: int) -> ImageInfo | None:
     except UnidentifiedImageError:
         return None
 
-    tint_color = choose_tint_color(im)
+    tint_color = choose_tint_color(path)
 
     info = ImageInfo(
         path=path,

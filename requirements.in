@@ -1,6 +1,4 @@
 flask
 Pillow
-scikit-learn
 sqlite_utils
 tqdm
-wcag_contrast_ratio

@@ -19,26 +19,16 @@ itsdangerous==2.2.0
     # via flask
 jinja2==3.1.4
     # via flask
-joblib==1.4.2
-    # via scikit-learn
 markupsafe==2.1.5
     # via
     #   jinja2
     #   werkzeug
-numpy==1.26.4
-    # via
-    #   scikit-learn
-    #   scipy
 pillow==10.3.0
     # via -r requirements.in
 pluggy==1.5.0
     # via sqlite-utils
 python-dateutil==2.9.0.post0
     # via sqlite-utils
-scikit-learn==1.4.2
-    # via -r requirements.in
-scipy==1.13.0
-    # via scikit-learn
 six==1.16.0
     # via python-dateutil
 sqlite-fts4==1.0.3
@@ -47,11 +37,7 @@ sqlite-utils==3.36
     # via -r requirements.in
 tabulate==0.9.0
     # via sqlite-utils
-threadpoolctl==3.5.0
-    # via scikit-learn
 tqdm==4.66.4
-    # via -r requirements.in
-wcag-contrast-ratio==0.9
     # via -r requirements.in
 werkzeug==3.0.3
     # via flask
