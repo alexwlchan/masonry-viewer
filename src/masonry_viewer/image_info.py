@@ -1,10 +1,12 @@
+from collections.abc import Iterator
 import os
 import pathlib
 import subprocess
 import typing
 
 from PIL import Image, UnidentifiedImageError
-from sqlite_utils import Database, Table
+from sqlite_utils import Database
+from sqlite_utils.db import Table
 import tqdm
 
 
@@ -26,7 +28,7 @@ def choose_tint_color(path: pathlib.Path) -> str:
     return result.strip().decode("utf8")
 
 
-def get_file_paths_under(root="."):
+def get_file_paths_under(root=".") -> Iterator[pathlib.Path]:
     """
     Generates the absolute paths to every matching file under ``root``.
     """
@@ -94,18 +96,18 @@ def get_image_info(root: str, *, show_progress: bool = False) -> list[ImageInfo]
     """
     db = Database("image_info.db")
 
-    known_images = {}
+    known_images: dict[tuple[str, int], ImageInfo] = {}
 
     for row in db["images"].rows:
         row["path"] = pathlib.Path(row["path"])
-        known_images[(row["path"], row["mtime"])] = row
+        known_images[(row["path"], row["mtime"])] = typing.cast(ImageInfo, row)
 
     result: list[ImageInfo] = []
 
     paths = list(get_file_paths_under(root))
 
     if show_progress:
-        paths = tqdm.tqdm(paths)
+        paths = tqdm.tqdm(paths)  # type: ignore
 
     for p in paths:
         mtime = os.path.getmtime(p)
