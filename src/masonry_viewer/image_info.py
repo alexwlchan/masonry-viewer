@@ -52,11 +52,11 @@ class ImageInfo(typing.TypedDict):
     path: pathlib.Path
     width: int
     height: int
-    mtime: int
+    mtime: float
     tint_color: str
 
 
-def get_info(path: pathlib.Path, mtime: int) -> ImageInfo | None:
+def get_info(path: pathlib.Path, mtime: float) -> ImageInfo | None:
     """
     Get information about a single image.
     """
@@ -96,7 +96,7 @@ def get_image_info(root: str, *, show_progress: bool = False) -> list[ImageInfo]
     """
     db = Database("image_info.db")
 
-    known_images: dict[tuple[str, int], ImageInfo] = {}
+    known_images: dict[tuple[pathlib.Path, float], ImageInfo] = {}
 
     for row in db["images"].rows:
         row["path"] = pathlib.Path(row["path"])
@@ -111,6 +111,8 @@ def get_image_info(root: str, *, show_progress: bool = False) -> list[ImageInfo]
 
     for p in paths:
         mtime = os.path.getmtime(p)
+
+        info: ImageInfo | None
 
         try:
             info = known_images[(p, mtime)]
