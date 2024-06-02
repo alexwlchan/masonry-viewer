@@ -112,12 +112,14 @@ def get_image_info(root: str, *, show_progress: bool = False) -> list[ImageInfo]
     for p in paths:
         mtime = os.path.getmtime(p)
 
-        try:
-            p_info = known_images[(p, mtime)]
-        except KeyError:
-            p_info = get_info(p, mtime)
+        info: ImageInfo | None
 
-        if p_info is not None:
-            result.append(p_info)
+        try:
+            info = known_images[(p, mtime)]
+        except KeyError:
+            info = get_info(p, mtime)
+
+        if info is not None:
+            result.append(info)
 
     return result
