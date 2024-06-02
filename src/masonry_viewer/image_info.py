@@ -113,7 +113,7 @@ def get_image_info(root: str, *, show_progress: bool = False) -> list[ImageInfo]
         mtime = os.path.getmtime(p)
 
         try:
-            info = known_images[(p, mtime)]
+            p_info = known_images[(p, mtime)]
         except KeyError:
             p_info = get_info(p, mtime)
 
