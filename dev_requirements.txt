@@ -14,7 +14,7 @@ click-default-group==1.2.4
     # via
     #   -r requirements.txt
     #   sqlite-utils
-coverage==7.5.1
+coverage[toml]==7.5.1
     # via pytest-cov
 flask==3.0.3
     # via -r requirements.txt
@@ -54,7 +54,7 @@ python-dateutil==2.9.0.post0
     # via
     #   -r requirements.txt
     #   sqlite-utils
-ruff==0.4.7
+ruff==0.4.8
     # via -r dev_requirements.in
 six==1.16.0
     # via
