@@ -19,7 +19,7 @@ markupsafe==2.1.5
     # via
     #   jinja2
     #   werkzeug
-pillow==10.3.0
+pillow==10.4.0
     # via -r requirements.in
 pluggy==1.5.0
     # via sqlite-utils
