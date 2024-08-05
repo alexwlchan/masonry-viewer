@@ -54,7 +54,7 @@ python-dateutil==2.9.0.post0
     # via
     #   -r requirements.txt
     #   sqlite-utils
-ruff==0.5.5
+ruff==0.5.6
     # via -r dev_requirements.in
 six==1.16.0
     # via
